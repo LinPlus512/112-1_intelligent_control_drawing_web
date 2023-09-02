@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>111-2 Drawing Web</title>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.8/xlsx.full.min.js"></script>
+        <style type="text/css">
+            /* CSS styles */
+
+            /* Reset default margin and padding */
+            html, body {
+                margin: 0;
+                padding: 0;
+            }
+
+            /* Body styles */
+            body {
+                color: #292929;
+                font: 90% Roboto, Arial, sans-serif;
+                font-weight: 500;
+                font-size: 20px;
+            }
+
+            /* Input styles */
+            #input {
+                color: #292929;
+                font: 90% Roboto, Arial, sans-serif;
+                font-weight: 500;
+                font-size: 20px;
+            }
+
+            /* Paragraph styles */
+            p {
+                padding: 0 10px;
+                line-height: 1.8;
+            }
+
+            /* List item styles */
+            ul li {
+                padding-right: 10px;
+                line-height: 1.6;
+            }
+
+            /* Heading styles */
+            h3 {
+                padding: 5px 20px;
+                margin: 0;
+            }
+
+            /* Header styles */
+            div#header {
+                position: relative;
+            }
+
+            div#header h1 {
+                height: 80px;
+                line-height: 80px;
+                margin: 0;
+                padding-left: 10px;
+                background: #e0e0e0;
+                color: #292929;
+            }
+
+            div#header a {
+                position: absolute;
+                right: 0;
+                top: 23px;
+                padding: 10px;
+                color: #006;
+            }
+
+            /* Navigation styles */
+            div#navigation {
+                background: #89b3ef;
+            }
+
+            div#navigation li {
+                list-style: none;
+            }
+
+            /* Footer styles */
+            div#footer {
+                background: #42444e;
+                color: #fff;
+            }
+
+            div#footer p {
+                padding: 20px 10px;
+            }
+
+            /* Wrapper styles */
+            div#wrapper {
+                float: left;
+                width: 800px;
+                margin-left: -150px
+            }
+
+            /* Content styles */
+            div#content {
+                margin-left: 200px
+            }
+
+            /* Navigation styles */
+            div#navigation {
+                float: right;
+                width: 400px;
+                height: 800px
+            }
+
+            /* Extra styles */
+            div#extra {
+                float: right;
+                clear: right;
+                width: 200px
+            }
+
+            /* Footer styles */
+            div#footer {
+                clear: both;
+                width: 100%
+            }
+        </style>
+    </head>
+
+    <body>
+        <div id="header">
+            <h1>112-1 Intelligent Control Draw Platform</h1>
+        </div>
+
+        <div id="wrapper">
+            <div id="content">
+                </br>
+                <!-- File input -->
+                <input type="file" id="input" accept=".xlsx" />
+                </br>
+                </br>
+                <!-- Table output -->
+                <table id="output"></table>
+                <!-- Total number of people -->
+                <p id="totalPeople"></p>
+            </div>
+        </div>
+
+        <div id="navigation">
+            </br>
+            <!-- Number of winners input -->
+            <label for="numOfWinners">&nbsp&nbsp&nbsp&nbspNumber:</label>
+            <input type="number" id="numOfWinners" min="1" value="1" />
+            <!-- Draw button -->
+            <button id="drawButton">Draw</button>
+            <!-- Clear button -->
+            <button id="clearButton">Clear</button>
+            <!-- Display winners -->
+            <p id="winners"></p>
+            <!-- Display drawn list -->
+            <p id="drawnList"></p>
+        </div>
+
+        <div id="footer">
+            <!-- Footer content -->
+            <div class="footer-content" style="text-align: center;">
+                <span class="author">Author: Cheng Hao, Lin (Nathan)</span><br>
+                <span class="email">Email: chhlin512@gmail.com</span><br>
+            </div>
+            <!-- Copyright -->
+            <div class="copyright" style="text-align: center;">
+                <span style="text-align: center;">&copy; 2023 Cheng Hao, Lin. All rights reserved.</span>
+            </div>
+        </div>
+
+
+        <script>
+            var input = document.getElementById('input'); // Input element for file selection
+            var output = document.getElementById('output'); // Output element for displaying table
+            var totalPeople = document.getElementById('totalPeople'); // Element for displaying total number of people
+            var numOfWinnersInput = document.getElementById('numOfWinners'); // Input element for number of winners
+            var drawButton = document.getElementById('drawButton'); // Button for drawing winners
+            var clearButton = document.getElementById('clearButton'); // Button for clearing winners
+            var winnersOutput = document.getElementById('winners'); // Output element for displaying winners
+            var drawnListOutput = document.getElementById('drawnList'); // Output element for displaying drawn list
+            var jsonData = []; // Array to store Excel data
+            var drawnWinners = []; // Array to store drawn winners
+        
+            input.addEventListener('change', function(e) {
+                var file = e.target.files[0];
+                var reader = new FileReader();
+        
+                reader.onload = function(e) {
+                    var data = new Uint8Array(e.target.result);
+                    var workbook = XLSX.read(data, { type: 'array' });
+                    var worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                    jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    jsonData.shift();
+                    showTable();
+                    showTotalPeople();
+                };
+        
+                reader.readAsArrayBuffer(file);
+            });
+        
+            drawButton.addEventListener('click', function() {
+                var numOfWinners = parseInt(numOfWinnersInput.value);
+        
+                if (numOfWinners > jsonData.length) {
+                    alert('The number of participants in the lucky draw cannot exceed the total number of people.');
+                    return;
+                }
+        
+                var availableData = jsonData.filter(function(row) {
+                    return !drawnWinners.includes(row[4]);
+                });
+        
+                if (availableData.length < numOfWinners) {
+                    alert('The remaining number of eligible participants for the draw is insufficient.');
+                    return;
+                }
+        
+                var shuffledData = shuffleArray(availableData);
+                var winners = shuffledData.slice(0, numOfWinners).map(function(row) { return row[4]; });
+        
+                winners.forEach(function(row) {
+                    drawnWinners.push(row);
+                });
+        
+                displayWinners(winners);
+                displayDrawnList();
+                showTotalPeople();
+            });
+        
+            clearButton.addEventListener('click', function() {
+                drawnWinners = [];
+                displayDrawnList();
+                showTotalPeople();
+            });
+        
+            function showTable() {
+                var html = '<thead><tr><th>Student list</th></tr></thead><tbody>';
+        
+                jsonData.forEach(function(row) {
+                    var value = row[4];
+                    html += '<tr><td>' + value + '</td></tr>';
+                });
+        
+                html += '</tbody>';
+                output.innerHTML = html;
+            }
+        
+            function showTotalPeople() {
+                var totalPeopleCount = jsonData.length;
+                var drawnPeopleCount = drawnWinners.length;
+                var lastPeopleCount = totalPeopleCount - drawnPeopleCount;
+                totalPeople.textContent = 'Total: ' + totalPeopleCount + ', Drawn: ' + drawnPeopleCount + ', Last: ' + lastPeopleCount;
+            }
+        
+            function displayWinners(winners) {
+                var winnersList = winners.map(function(winner) {
+                    return '<li>' + winner + '</li>';
+                }).join('');
+        
+                winnersOutput.innerHTML = '<p>Winner:</p><ul>' + winnersList + '</ul>';
+            }
+        
+            function displayDrawnList() {
+                var drawnList = drawnWinners.map(function(drawn) {
+                    return '<li>' + drawn + '</li>';
+                }).join('');
+        
+                drawnListOutput.innerHTML = '<p>List of winners</p><ul>' + drawnList + '</ul>';
+            }
+        
+            function shuffleArray(array) {
+                var currentIndex = array.length, temporaryValue, randomIndex;
+        
+                while (currentIndex !== 0) {
+                    randomIndex = Math.floor(Math.random() * currentIndex);
+                    currentIndex -= 1;
+        
+                    temporaryValue = array[currentIndex];
+                    array[currentIndex] = array[randomIndex];
+                    array[randomIndex] = temporaryValue;
+                }
+        
+                return array;
+            }
+        </script>
+    </body>
+</html>
